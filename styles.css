@@ -45,10 +45,16 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
 .content-section:not(#education) { margin-top: 43px; padding-top: 23px; border-top: 1px solid var(--line); }
 .section-heading { position: relative; margin-bottom: 30px; text-align: center; }
 .section-heading h2 { font-size: 35px; font-style: italic; font-weight: 400; line-height: 1.3; }
-.section-note { position: absolute; right: 0; bottom: 5px; color: var(--muted); font-size: 16px; line-height: 1.5; }
-.education-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 50px; }
-.education-row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 23px; align-items: start; }
-.school-emblem { width: 84px; height: 84px; object-fit: contain; margin-top: 5px; mix-blend-mode: multiply; }
+.education-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 50px; }
+.education-row { display: grid; grid-template-columns: 84px minmax(0, 1fr); grid-template-rows: subgrid; grid-row: span 5; column-gap: 23px; align-items: start; }
+.education-copy { display: contents; }
+.education-copy > * { grid-column: 2; }
+.education-row h3 { grid-row: 1; }
+.school-faculty { grid-row: 2; }
+.degree-line { grid-row: 3; }
+.education-date { grid-row: 4; }
+.admission-note { grid-row: 5; }
+.school-emblem { grid-column: 1; grid-row: 1 / -1; width: 84px; height: 84px; object-fit: contain; margin-top: 5px; mix-blend-mode: multiply; }
 .education-row h3 { font-size: 23px; margin-bottom: 7px; line-height: 1.2; }
 .education-row p { font-size: 19px; line-height: 1.5; }
 .school-faculty { margin-bottom: 11px; }
@@ -104,15 +110,15 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
 .cv-footer { font-size: 15px; margin-top: 28px; padding-top: 17px; border-top: 1px solid var(--line); color: var(--muted); }
 
 @media (max-width: 1000px) {
-  .education-list { gap: 30px; }
-  .education-row { grid-template-columns: 62px minmax(0, 1fr); gap: 18px; }
+  .education-list { column-gap: 30px; }
+  .education-row { grid-template-columns: 62px minmax(0, 1fr); column-gap: 18px; }
   .school-emblem { width: 62px; height: 62px; }
   .education-row h3 { font-size: 21px; }
   .education-row p { font-size: 18px; }
 }
 @media (max-width: 800px) {
   .education-list { grid-template-columns: minmax(0, 1fr); gap: 26px; }
-  .education-row { grid-template-columns: 68px minmax(0, 1fr); gap: 23px; }
+  .education-row { grid-template-columns: 68px minmax(0, 1fr); grid-template-rows: repeat(5, auto); grid-row: auto; column-gap: 23px; row-gap: 0; }
   .school-emblem { width: 68px; height: 68px; }
   .education-row + .education-row { border-top: 1px solid var(--line); padding-top: 26px; }
   .education-date { margin-top: 10px; }
@@ -132,7 +138,6 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
   .content-section:not(#education) { margin-top: 34px; padding-top: 24px; }
   .section-heading { margin-bottom: 25px; }
   .section-heading h2 { font-size: 31px; }
-  .section-note { position: static; display: block; margin-top: 7px; }
   .paper { column-gap: 16px; row-gap: 9px; }
   .paper-meta, .paper-link { font-size: 16px; }
   .paper h3, .paper-authors { grid-column: 1 / -1; }
@@ -154,7 +159,7 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
 }
 @media (max-width: 520px) {
   .site-header h1 { flex-direction: column; align-items: center; }
-  .education-row { grid-template-columns: 42px minmax(0, 1fr); gap: 16px; }
+  .education-row { grid-template-columns: 42px minmax(0, 1fr); column-gap: 16px; }
   .school-emblem { width: 42px; height: 42px; }
 }
 @media (max-width: 400px) {
