@@ -6,7 +6,7 @@
   --blue: #24559a;
   --line: #d8dce3;
   --latin: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, "Songti SC", SimSun, serif;
-  --chinese: STSong, "Songti SC", "Noto Serif CJK SC", SimSun, serif;
+  --chinese: "Songti SC", STSong, "Noto Serif CJK SC", SimSun, serif;
   --font: var(--latin);
 }
 * { box-sizing: border-box; }
@@ -23,22 +23,49 @@ h3 { font-size: 21px; font-weight: 600; line-height: 1.4; }
 img { display: block; max-width: 100%; }
 svg { display: block; }
 [hidden] { display: none !important; }
+html[lang="en"] [data-lang="zh"], html[lang="zh-CN"] [data-lang="en"] { display: none !important; }
+html[lang="zh-CN"] { --font: var(--chinese); }
+html[lang="zh-CN"] body { font-weight: 500; }
 
-/* Open, portrait-free masthead and a wider editorial page. */
+/* A paper-like page, with an ink portrait and a quiet personal epigraph. */
 .page-shell, .header-inner { max-width: 1160px; padding-inline: 40px; margin-inline: auto; }
-.header-inner { padding-top: 77px; text-align: center; }
+.header-inner { padding-top: 27px; text-align: center; }
+.page-tools { display: flex; align-items: center; justify-content: flex-end; gap: 24px; margin-bottom: 36px; font-size: 15px; }
+.quiet-experience { text-decoration: none; color: var(--muted); }
+.quiet-experience:hover { color: var(--blue); }
+.language-toggle { background: transparent; border: 0; border-left: 1px solid var(--line); padding: 3px 0 3px 22px; color: var(--blue); cursor: pointer; font: 16px/1.4 var(--latin); min-width: 54px; min-height: 32px; }
 h1 { font: 400 58px/1.18 var(--latin); letter-spacing: -1.5px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 23px; }
 .chinese-name { font: 500 24px/1.4 var(--chinese); letter-spacing: 3px; color: var(--body); white-space: nowrap; }
-.site-header h1 { justify-content: center; font-size: 66px; line-height: 1.15; gap: 12px 28px; }
+.site-header h1 { justify-content: center; font-size: 62px; line-height: 1.15; gap: 12px 28px; }
 .site-header .chinese-name { font-size: 27px; letter-spacing: 4px; }
 nav { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px 39px; margin-top: 29px; }
 nav a { color: var(--blue); font-size: 19px; text-decoration: none; white-space: nowrap; }
 nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
 .skip-link { position: fixed; top: -70px; left: 20px; z-index: 20; background: var(--ink); color: #fff; padding: 8px 16px; }
 .skip-link:focus { top: 12px; }
-.hero { max-width: 880px; margin-inline: auto; padding-top: 43px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 278px; align-items: center; gap: 58px; padding-top: 45px; }
 .hero-copy { font-size: 21px; line-height: 1.55; }
 .hero-copy p { text-wrap: pretty; }
+.hero-portrait { margin: 0; align-self: center; }
+.hero-portrait img { width: 100%; height: auto; mix-blend-mode: multiply; }
+.hero-portrait a { display: block; }
+.experience-link { display: inline-flex; align-items: center; gap: 13px; margin-top: 25px; font-size: 18px; text-decoration: none; }
+.experience-link:hover { text-decoration: underline; }
+.link-arrow { display: inline-block; transition: transform .2s ease; }
+.experience-link:hover .link-arrow { transform: translate(2px, -2px); }
+.particle-mark { position: relative; width: 27px; height: 27px; display: inline-block; }
+.particle-mark i { position: absolute; width: 3px; height: 3px; background: var(--blue); border-radius: 50%; }
+.particle-mark i:nth-child(1) { left: 11px; top: 2px; }
+.particle-mark i:nth-child(2) { left: 2px; top: 13px; width: 4px; height: 4px; }
+.particle-mark i:nth-child(3) { left: 13px; top: 12px; width: 5px; height: 5px; }
+.particle-mark i:nth-child(4) { right: 0; top: 7px; width: 2px; height: 2px; }
+.particle-mark i:nth-child(5) { left: 18px; bottom: 2px; }
+.epigraph { max-width: 780px; margin: 43px auto 0; padding: 29px 28px 0; border-top: 1px solid var(--line); text-align: center; }
+.epigraph blockquote { font: 500 21px/1.9 var(--chinese); letter-spacing: .09em; color: #334255; margin: 0; }
+.epigraph blockquote span { display: block; }
+.epigraph p { max-width: 630px; margin: 12px auto 0; color: var(--muted); font: italic 16px/1.5 var(--latin); text-wrap: pretty; }
+html[lang="zh-CN"] .hero-copy { line-height: 1.9; }
+html[lang="zh-CN"] .section-heading h2 { font-style: normal; font-size: 29px; letter-spacing: .12em; }
 .hero-copy a, .project-supervision a, .community-entry a { white-space: nowrap; }
 .next-step, .research-intro { margin-top: 18px; }
 .content-section { padding-top: 47px; }
@@ -102,6 +129,7 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
 .cv-portrait { width: 108px; height: auto; mix-blend-mode: multiply; }
 .cv-section { padding-top: 30px; }
 .cv-section h2 { font-size: 28px; font-style: italic; font-weight: 400; line-height: 1.3; padding-bottom: 9px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+html[lang="zh-CN"] .cv-section h2 { font-style: normal; letter-spacing: .08em; }
 .cv-item { margin-bottom: 20px; }
 .cv-item h3 { font-size: 19px; }
 .cv-item p, .cv-item li { font-size: 17px; }
@@ -110,6 +138,8 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
 .cv-footer { font-size: 15px; margin-top: 28px; padding-top: 17px; border-top: 1px solid var(--line); color: var(--muted); }
 
 @media (max-width: 1000px) {
+  .hero { grid-template-columns: minmax(0, 1fr) 235px; gap: 35px; }
+  .hero-copy { font-size: 20px; }
   .education-list { column-gap: 30px; }
   .education-row { grid-template-columns: 62px minmax(0, 1fr); column-gap: 18px; }
   .school-emblem { width: 62px; height: 62px; }
@@ -117,6 +147,8 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
   .education-row p { font-size: 18px; }
 }
 @media (max-width: 800px) {
+  .hero { grid-template-columns: minmax(0, 1fr) 200px; gap: 27px; align-items: start; }
+  .hero-portrait { margin-top: 16px; align-self: start; }
   .education-list { grid-template-columns: minmax(0, 1fr); gap: 26px; }
   .education-row { grid-template-columns: 68px minmax(0, 1fr); grid-template-rows: repeat(5, auto); grid-row: auto; column-gap: 23px; row-gap: 0; }
   .school-emblem { width: 68px; height: 68px; }
@@ -126,13 +158,19 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
 @media (max-width: 720px) {
   html { scroll-padding-top: 24px; }
   .page-shell, .header-inner { padding-inline: 26px; }
-  .header-inner { padding-top: 44px; }
+  .header-inner { padding-top: 19px; }
+  .page-tools { margin-bottom: 25px; font-size: 14px; }
   .site-header h1 { font-size: clamp(42px, 7.5vw, 54px); gap: 10px 20px; }
   .site-header .chinese-name { font-size: 23px; }
   nav { gap: 10px 28px; margin-top: 24px; }
   nav a { font-size: 17px; }
-  .hero { padding-top: 33px; }
+  .hero { padding-top: 32px; display: flex; flex-direction: column; gap: 24px; }
+  .hero-portrait { order: -1; width: 180px; margin: 0 auto; align-self: center; }
   .hero-copy { font-size: 19px; line-height: 1.6; }
+  .experience-link { margin-top: 22px; font-size: 17px; }
+  .epigraph { padding: 25px 0 0; margin-top: 34px; }
+  .epigraph blockquote { font-size: 18px; letter-spacing: .025em; }
+  .epigraph p { font-size: 15px; max-width: 470px; }
   .next-step, .research-intro { margin-top: 19px; }
   .content-section { padding-top: 38px; }
   .content-section:not(#education) { margin-top: 34px; padding-top: 24px; }
@@ -161,6 +199,7 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
   .site-header h1 { flex-direction: column; align-items: center; }
   .education-row { grid-template-columns: 42px minmax(0, 1fr); column-gap: 16px; }
   .school-emblem { width: 42px; height: 42px; }
+  .epigraph blockquote { font-size: 17px; letter-spacing: 0; }
 }
 @media (max-width: 400px) {
   .page-shell, .header-inner { padding-inline: 22px; }
@@ -176,7 +215,7 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
   .cv-heading .chinese-name { flex-basis: 100%; }
   .cv-portrait { width: 64px; }
 }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .link-arrow { transition: none; } }
 @media print {
   .cv-tools, .cv-footer, .skip-link { display: none !important; }
   .cv-shell { padding: 0; max-width: none; }
