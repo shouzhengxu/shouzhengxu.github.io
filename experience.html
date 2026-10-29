@@ -4,32 +4,32 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Shouzheng Xu’s portrait, research and work, written in light.">
-  <meta name="theme-color" content="#09131c">
+  <meta name="theme-color" content="#fcfbf9">
   <link rel="icon" href="assets/favicon.svg?v=2" type="image/svg+xml">
-  <link rel="stylesheet" href="experience.css?v=20261029-text">
+  <link rel="stylesheet" href="experience.css?v=20261029-manuscript">
   <script src="site.js?v=20261029" defer></script>
-  <script src="particles.js?v=20261029-text" defer></script>
+  <script src="particles.js?v=20261029-manuscript" defer></script>
   <title>Written in Light · Shouzheng Xu</title>
 </head>
 <body class="experience">
   <a class="skip-link" href="#story"><span data-lang="en">Skip to content</span><span data-lang="zh">跳至内容</span></a>
-  <header class="experience-header">
+  <div class="page-corners">
     <a class="return-link" href="index.html"><span aria-hidden="true">←</span> <span data-lang="en">The written page</span><span data-lang="zh">回到纸页</span></a>
-    <span class="wordmark"><span data-lang="en">Written in light</span><span data-lang="zh">以微光，写成篇章</span></span>
     <div class="header-controls">
       <button type="button" id="replay-transition"><span data-lang="en">Reassemble</span><span data-lang="zh">重新聚合</span></button>
       <button type="button" id="motion-toggle" aria-pressed="false"><span data-lang="en">Pause motion</span><span data-lang="zh">暂停动态</span></button>
       <button class="language-toggle" type="button" data-language-toggle aria-label="Switch language">中文</button>
     </div>
-  </header>
-  <main class="experience-stage" id="story">
-    <div class="particle-scene" id="particle-scene" aria-hidden="true"><canvas id="particle-canvas"></canvas></div>
+  </div>
+  <div class="particle-scene" id="particle-scene" aria-hidden="true"><canvas id="particle-canvas"></canvas></div>
+  <main class="experience-stage" id="story" tabindex="-1">
     <div id="particle-links" class="particle-links"></div>
     <div class="story-copy" id="story-copy">
       <section class="story-panel" data-chapter="0" aria-labelledby="chapter-about-title">
-        <img data-particle="portrait" class="portrait-fallback" src="assets/portrait-ink.png" alt="Shouzheng Xu · 徐守正" width="1086" height="1448">
+        <img data-particle="portrait" class="portrait-fallback" src="assets/portrait-ink-transparent.png" alt="Shouzheng Xu · 徐守正" width="1086" height="1448">
         <h1 id="chapter-about-title" data-particle="name"><span data-lang="en">Shouzheng Xu</span><span data-lang="zh">徐守正</span></h1>
         <p data-particle="subtitle"><span data-lang="en">徐守正</span><span data-lang="zh">Shouzheng Xu</span></p>
+        <p data-particle="motto"><span data-lang="en">Into the Unexplored</span><span data-lang="zh">探未至之境</span></p>
         <p data-particle="intro"><span data-lang="en">Computer science at CUFE.<br>Incoming Ph.D. student at Shanghai Jiao Tong University.</span><span data-lang="zh">就读于中央财经大学。<br>即将赴上海交通大学攻读博士。</span></p>
         <p data-particle="meta"><span data-lang="en">Large language models · Agent systems · Knowledge graphs</span><span data-lang="zh">大语言模型 · 智能体系统 · 知识图谱</span></p>
       </section>
@@ -85,17 +85,13 @@
       </section>
     </div>
   </main>
-  <footer class="experience-footer">
-    <p class="navigation-hint"><span id="chapter-count">01 / 06</span><span id="navigation-instruction"><span data-lang="en">Scroll to reassemble ↓</span><span data-lang="zh">滚动，翻开下一篇 ↓</span></span></p>
-    <nav class="chapter-navigation" aria-label="Chapters / 章节">
-      <button type="button" data-go="0" aria-current="step"><span class="chapter-dot"></span><span data-lang="en">Portrait</span><span data-lang="zh">开篇</span></button>
-      <button type="button" data-go="1"><span class="chapter-dot"></span><span data-lang="en">Education</span><span data-lang="zh">求学</span></button>
-      <button type="button" data-go="2"><span class="chapter-dot"></span><span data-lang="en">Research</span><span data-lang="zh">探索</span></button>
-      <button type="button" data-go="3"><span class="chapter-dot"></span><span data-lang="en">Papers</span><span data-lang="zh">论文</span></button>
-      <button type="button" data-go="4"><span class="chapter-dot"></span><span data-lang="en">Project</span><span data-lang="zh">实践</span></button>
-      <button type="button" data-go="5"><span class="chapter-dot"></span><span data-lang="en">Together</span><span data-lang="zh">同行</span></button>
-    </nav>
-    <div class="step-controls"><button id="previous-chapter" type="button" aria-label="Previous chapter / 上一章" disabled>←</button><button id="next-chapter" type="button" aria-label="Next chapter / 下一章">→</button></div>
+  <footer class="reading-footer">
+    <div class="step-controls">
+      <button id="previous-chapter" type="button" aria-label="Previous page / 上一页" disabled>←</button>
+      <span id="chapter-count" aria-label="Page 1 of 6">I / VI</span>
+      <button id="next-chapter" type="button" aria-label="Next page / 下一页">→</button>
+    </div>
+    <p id="navigation-instruction"><span data-lang="en">Scroll to turn the page</span><span data-lang="zh">滚动，翻开下一页</span></p>
   </footer>
   <p class="sr-only" id="chapter-announcement" aria-live="polite" aria-atomic="true"></p>
   <noscript><p class="no-script-note">JavaScript is needed for the particle motion. <a href="index.html">Read the complete homepage</a>. 动态粒子需要 JavaScript，亦可<a href="index.html">阅读完整主页</a>。</p></noscript>

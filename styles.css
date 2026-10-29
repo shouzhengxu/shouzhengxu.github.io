@@ -48,7 +48,7 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
 .hero-copy { font-size: 21px; line-height: 1.55; }
 .hero-copy p { text-wrap: pretty; }
 .hero-portrait { margin: 0; align-self: start; }
-.hero-portrait img { width: 100%; height: auto; mix-blend-mode: multiply; }
+.hero-portrait img { width: 100%; height: auto; }
 .hero-portrait > a { display: block; width: 190px; margin: 0 auto; }
 .experience-link { display: inline-flex; align-items: center; gap: 13px; margin-top: 25px; font-size: 18px; text-decoration: none; }
 .experience-link:hover { text-decoration: underline; }
@@ -62,11 +62,7 @@ nav a:hover, nav a.active { color: var(--ink); text-decoration: underline; }
 .particle-mark i:nth-child(4) { right: 0; top: 7px; width: 2px; height: 2px; }
 .particle-mark i:nth-child(5) { left: 18px; bottom: 2px; }
 .epigraph { margin: 15px auto 0; text-align: center; }
-.epigraph blockquote { font: 500 17px/1.8 var(--chinese); letter-spacing: .035em; color: #334255; margin: 0; }
-.epigraph blockquote span { display: block; }
-.motto-translation { margin-top: 9px; }
-.motto-translation summary { color: var(--blue); cursor: pointer; font: 14px/1.5 var(--latin); list-style-position: inside; }
-.motto-translation summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
+.epigraph blockquote { font: 500 20px/1.8 var(--chinese); letter-spacing: .18em; color: #334255; margin: 0; }
 .epigraph p { margin: 8px auto 0; color: var(--muted); font: italic 15px/1.5 var(--latin); text-wrap: pretty; }
 html[lang="zh-CN"] .hero-copy { line-height: 1.9; }
 html[lang="zh-CN"] .section-heading h2 { font-style: normal; font-size: 29px; letter-spacing: .12em; }
@@ -130,7 +126,7 @@ html[lang="zh-CN"] .section-heading h2 { font-style: normal; font-size: 29px; le
 .cv-heading { display: grid; grid-template-columns: minmax(0, 1fr) 108px; gap: 32px; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 25px; }
 .cv-heading h1 { font-size: 45px; }
 .cv-heading p { font-size: 16px; margin-top: 15px; overflow-wrap: anywhere; }
-.cv-portrait { width: 108px; height: auto; mix-blend-mode: multiply; }
+.cv-portrait { width: 108px; height: auto; }
 .cv-section { padding-top: 30px; }
 .cv-section h2 { font-size: 28px; font-style: italic; font-weight: 400; line-height: 1.3; padding-bottom: 9px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
 html[lang="zh-CN"] .cv-section h2 { font-style: normal; letter-spacing: .08em; }
@@ -177,8 +173,7 @@ html[lang="zh-CN"] .cv-section h2 { font-style: normal; letter-spacing: .08em; }
   .hero-copy { grid-column: 1 / -1; grid-row: 4; font-size: 19px; line-height: 1.6; }
   .experience-link { margin-top: 22px; font-size: 17px; }
   .epigraph { grid-column: 1 / -1; grid-row: 2; margin: 0; }
-  .epigraph blockquote { max-width: 440px; margin: 0 auto; font-size: 17px; letter-spacing: .025em; text-wrap: balance; }
-  .epigraph blockquote span { display: inline-block; }
+  .epigraph blockquote { margin: 0 auto; font-size: 19px; letter-spacing: .15em; }
   .epigraph p { max-width: 440px; }
   .next-step, .research-intro { margin-top: 19px; }
   .content-section { padding-top: 38px; }
@@ -207,7 +202,7 @@ html[lang="zh-CN"] .cv-section h2 { font-style: normal; letter-spacing: .08em; }
 @media (max-width: 520px) {
   .education-row { grid-template-columns: 42px minmax(0, 1fr); column-gap: 16px; }
   .school-emblem { width: 42px; height: 42px; }
-  .epigraph blockquote { font-size: 16px; letter-spacing: 0; }
+  .epigraph blockquote { font-size: 18px; }
 }
 @media (max-width: 400px) {
   .page-shell, .header-inner { padding-inline: 22px; }
