@@ -17,6 +17,9 @@
   const hashIndex = hash => hash === 'questions' ? 0 : hashes.indexOf(hash);
   const names = [['About','简介'], ['Education','教育经历'], ['Publications','学术论文'], ['Project','代表项目'], ['Honors','主要荣誉'], ['Activities','社团活动']];
   const colors = {ink:'#171d29',body:'#242a34',muted:'#4b5565',accent:'#24559a',rule:'#c0b9ac'};
+  // 200 ms to release the letters, 600 ms for the image, 200 ms to reform.
+  // Share these phases with the shader and snapshot to keep interrupted turns seamless.
+  const motion = {duration:1000,stagger:.025,leaveEnd:.175,arriveStart:.8,arriveStagger:.01};
   let chapter = Math.max(0, hashIndex(location.hash.slice(1)));
   let paused = reducedMotion.matches;
   let renderer = null;
@@ -92,7 +95,7 @@
     if (now - wheelTime > 180) wheelSum = 0;
     wheelTime = now; wheelSum += event.deltaY * (event.deltaMode === 1 ? 16 : 1);
     if (Math.abs(event.deltaY) > 2) event.preventDefault();
-    const turnDelay = paused || document.body.classList.contains('particle-unavailable') ? 550 : 2350;
+    const turnDelay = paused || document.body.classList.contains('particle-unavailable') ? 550 : motion.duration + 120;
     if (now - navigationTime < turnDelay || Math.abs(wheelSum) < 70) return;
     goTo(chapter + Math.sign(wheelSum)); navigationTime = now; wheelSum = 0;
   }, {passive:false});
@@ -280,9 +283,9 @@
       vec3 curve(vec3 a,vec3 b,vec3 c,float t){return a*(1.0-t)*(1.0-t)+2.0*b*t*(1.0-t)+c*t*t;}
       void main(){
         float seed=aTraits.z;
-        float delay=seed*.075;
-        float leave=smoothstep(.02+delay,.38+delay,uProgress);
-        float arrive=smoothstep(.53+delay*.4,1.0,uProgress);
+        float delay=seed*${motion.stagger.toFixed(3)};
+        float leave=smoothstep(delay,${motion.leaveEnd.toFixed(3)}+delay,uProgress);
+        float arrive=smoothstep(${motion.arriveStart.toFixed(3)}+seed*${motion.arriveStagger.toFixed(3)},1.0,uProgress);
         float breath=leave*(1.0-arrive);
         float phase=aTraits.w*6.2831853;
         vec3 symbol=aSymbol;
@@ -342,7 +345,7 @@
     let width=1,height=1,ratio=1,count=0,data=new Float32Array(0),target=new Float32Array(0);
     let start=0,progress=1,frameId=0,scrollFrame=0,lost=false;
     let pointer=[0,0],resizeTimer=0,inkFraction=.12;
-    const duration=2200;
+    const duration=motion.duration;
     const smooth=(a,b,t)=>{const n=Math.min(1,Math.max(0,(t-a)/(b-a)));return n*n*(3-2*n);};
     const noise=n=>{const value=Math.sin(n*127.1+311.7)*43758.5453;return value-Math.floor(value);};
     const lerp=(a,b,t)=>a+(b-a)*t;
@@ -395,7 +398,8 @@
       const out=new Float32Array(count*8);
       for(let i=0;i<count;i++){
         const k=i*stride,j=i*8,seed=data[k+22],phase=data[k+23]*Math.PI*2;
-        const leave=smooth(.02+seed*.075,.38+seed*.075,progress),arrive=smooth(.53+seed*.03,1,progress),breath=leave*(1-arrive);
+        const delay=seed*motion.stagger;
+        const leave=smooth(delay,motion.leaveEnd+delay,progress),arrive=smooth(motion.arriveStart+seed*motion.arriveStagger,1,progress),breath=leave*(1-arrive);
         const symbol=[data[k+6]+Math.sin(phase+progress*5)*8,data[k+7]+Math.sin(phase*.7+progress*4.3)*7-scrollY,data[k+8]+Math.sin(phase+progress*3)*15];
         const guide=[data[k+9],data[k+10]-scrollY,data[k+11]];
         const gather=[-data[k+9]*.7,data[k+10]*.65-scrollY,data[k+11]*.7];
@@ -458,7 +462,7 @@
       gl.uniform1f(uniforms.uCamera,Math.max(width,height)*1.5);
       gl.uniform1f(uniforms.uPixelRatio,ratio);gl.uniform1f(uniforms.uProgress,progress);gl.uniform1f(uniforms.uScroll,scrollY);gl.uniform1f(uniforms.uInkFraction,inkFraction);
       gl.drawArrays(gl.POINTS,0,count);
-      stage.dataset.phase=progress<1?(progress>.455&&progress<.56?'interlude':'assembling'):'formed';
+      stage.dataset.phase=progress<1?(progress>=motion.leaveEnd+motion.stagger&&progress<motion.arriveStart?'interlude':'assembling'):'formed';
     }
     function schedule(){if(!frameId&&!paused&&!document.hidden&&!lost&&progress<1)frameId=requestAnimationFrame(frame);}
     function frame(now){frameId=0;progress=Math.min(1,(now-start)/duration);draw();if(progress>=1)stage.classList.remove('is-assembling');else schedule();}
