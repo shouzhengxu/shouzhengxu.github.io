@@ -13,13 +13,14 @@
   const replayButton = document.getElementById('replay-transition');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = matchMedia('(max-width: 700px)');
-  const hashes = ['portrait', 'path', 'questions', 'papers', 'practice', 'together'];
-  const names = [['Portrait','开篇'], ['Education','求学'], ['Research','探索'], ['Publications','论文'], ['Project','实践'], ['Together','同行']];
+  const hashes = ['portrait', 'path', 'papers', 'practice', 'honors', 'together'];
+  const hashIndex = hash => hash === 'questions' ? 0 : hashes.indexOf(hash);
+  const names = [['About','简介'], ['Education','教育经历'], ['Publications','学术论文'], ['Project','代表项目'], ['Honors','主要荣誉'], ['Activities','社团活动']];
   const colors = {ink:'#171d29',body:'#242a34',muted:'#4b5565',accent:'#24559a',rule:'#c0b9ac'};
-  let chapter = Math.max(0, hashes.indexOf(location.hash.slice(1)));
+  let chapter = Math.max(0, hashIndex(location.hash.slice(1)));
   let paused = reducedMotion.matches;
   let renderer = null;
-  let portraitPixels = null;
+  const imagePixels = new Map();
   let navigationTime = -Infinity;
   const language = () => document.documentElement.lang.startsWith('zh') ? 'zh' : 'en';
 
@@ -33,9 +34,6 @@
   function updateControls() {
     const zh = language() === 'zh';
     document.title = zh ? '光字成篇 · 徐守正' : 'Written in Light · Shouzheng Xu';
-    const folio = document.getElementById('chapter-count');
-    folio.textContent = `${['I','II','III','IV','V','VI'][chapter]} / VI`;
-    folio.setAttribute('aria-label', zh ? `第 ${chapter + 1} 页，共 6 页` : `Page ${chapter + 1} of 6`);
     document.getElementById('chapter-announcement').textContent = `${chapter + 1} / 6 — ${names[chapter][zh ? 1 : 0]}`;
     motionButton.textContent = zh ? (paused ? '继续' : '暂停') : (paused ? 'Resume' : 'Pause');
     motionButton.setAttribute('aria-label', zh ? (paused ? '继续粒子动态' : '暂停粒子动态') : (paused ? 'Resume particle motion' : 'Pause particle motion'));
@@ -69,7 +67,7 @@
   reducedMotion.addEventListener('change', event => { paused = event.matches; renderer?.setPaused(paused); updateControls(); });
   document.addEventListener('languagechange', () => { updateControls(); renderer?.rebuild(true); });
   window.addEventListener('hashchange', () => {
-    const i = hashes.indexOf(location.hash.slice(1));
+    const i = hashIndex(location.hash.slice(1));
     if (i >= 0) goTo(i, {fromHistory:true});
   });
   function canChangeVertically(direction) {
@@ -94,7 +92,7 @@
     if (now - wheelTime > 180) wheelSum = 0;
     wheelTime = now; wheelSum += event.deltaY * (event.deltaMode === 1 ? 16 : 1);
     if (Math.abs(event.deltaY) > 2) event.preventDefault();
-    const turnDelay = paused || document.body.classList.contains('particle-unavailable') ? 550 : 4400;
+    const turnDelay = paused || document.body.classList.contains('particle-unavailable') ? 550 : 2350;
     if (now - navigationTime < turnDelay || Math.abs(wheelSum) < 70) return;
     goTo(chapter + Math.sign(wheelSum)); navigationTime = now; wheelSum = 0;
   }, {passive:false});
@@ -108,8 +106,8 @@
   }, {passive:true});
   goTo(chapter, {force:true,fromHistory:true,scroll:false});
 
-  // This layout is shared by sampling and focusable link regions, so a link
-  // remains in exactly the same place as the letters made from particles.
+  // Glyphs and emblems share one sampled page. Link hit regions use the same
+  // measured text runs, including links embedded in ordinary paragraphs.
   function composePage() {
     const width = Math.round(stage.getBoundingClientRect().width);
     const viewportWidth = document.documentElement.clientWidth;
@@ -122,126 +120,136 @@
     const stageRect = stage.getBoundingClientRect();
     const documentTop = stageRect.top + scrollY;
     const minimumHeight = Math.max(350, innerHeight - documentTop - (narrow ? 90 : 100));
-    const contentWidth = Math.min(width - (narrow ? 10 : 80), chapter === 0 ? 840 : 790);
+    const contentWidth = Math.min(width - (narrow ? 10 : chapter === 1 ? 40 : 80), chapter === 1 ? 1080 : 840);
     const left = (width - contentWidth) / 2;
-    const centered = chapter === 0;
     const specs = {
-      name: {size:narrow ? (width < 310 ? 40 : 45) : 65,line:1.2,after:9,color:'ink'},
-      subtitle: {size:narrow ? 21 : 23,line:1.4,after:15,color:'muted'},
-      motto: {size:narrow ? 22 : 25,line:1.5,after:24,color:'muted'},
-      intro: {size:narrow ? 21 : 25,line:1.65,after:18,color:'body'},
-      eyebrow: {size:narrow ? 15 : 16,line:1.5,after:16,color:'muted'},
-      title: {size:narrow ? 40 : 57,line:1.23,after:narrow ? 31 : 33,color:'ink'},
-      heading: {size:narrow ? 25 : 29,line:1.42,after:12,color:'ink'},
-      body: {size:narrow ? 21 : 23,line:zh ? 1.8 : 1.55,after:23,color:'body'},
-      statement: {size:narrow ? 30 : 38,line:1.6,after:30,color:'ink'},
-      meta: {size:narrow ? 17 : 18,line:1.65,after:13,color:'muted'},
-      authors: {size:narrow ? 17 : 18,line:1.65,after:18,color:'body'},
-      paper: {size:narrow ? 23 : 27,line:1.45,after:14,color:'accent'},
-      link: {size:narrow ? 18 : 21,line:1.6,after:15,color:'accent'}
+      name:{size:narrow ? (width < 310 ? 39 : 44) : 61,line:1.2,after:9,color:'ink'},
+      subtitle:{size:narrow ? 21 : 23,line:1.4,after:12,color:'muted'},
+      motto:{size:narrow ? 22 : 24,line:1.5,after:27,color:'muted'},
+      title:{size:narrow ? 39 : 54,line:1.23,after:narrow ? 29 : 38,color:'ink'},
+      heading:{size:narrow ? 25 : 28,line:1.42,after:12,color:'ink'},
+      body:{size:narrow ? 20 : 21,line:zh ? 1.8 : 1.55,after:22,color:'body'},
+      faculty:{size:narrow ? 20 : 21,line:1.6,after:8,color:'body'},
+      degree:{size:narrow ? 20 : 21,line:1.6,after:12,color:'body'},
+      meta:{size:narrow ? 17 : 18,line:1.65,after:12,color:'muted'},
+      note:{size:narrow ? 17 : 18,line:1.65,after:8,color:'muted'},
+      authors:{size:narrow ? 17 : 18,line:1.65,after:13,color:'body'},
+      paper:{size:narrow ? 24 : 28,line:1.42,after:13,color:'ink'},
+      link:{size:narrow ? 18 : 20,line:1.6,after:18,color:'accent'}
     };
-    function wrapped(text, maxWidth) {
-      const lines = [];
-      for (const paragraph of text.split('\n')) {
-        const tokens = /[\u3400-\u9fff]/.test(paragraph) ? Array.from(paragraph) : paragraph.match(/\S+\s*/g) || [''];
-        let line = '';
-        for (const token of tokens) {
-          if (ctx.measureText(line + token).width <= maxWidth) { line += token; continue; }
-          if (line.trim()) lines.push(line.trimEnd());
-          line = token.trimStart();
-          if (ctx.measureText(line).width > maxWidth) {
-            let fragment = '';
-            for (const character of line) {
-              if (ctx.measureText(fragment + character).width > maxWidth && fragment) { lines.push(fragment); fragment = ''; }
-              fragment += character;
-            }
-            line = fragment;
+    const items = [], links = new Map();
+    function runsOf(node, link=null, bold=false) {
+      if(node.nodeType===Node.TEXT_NODE)return [{text:node.textContent,link,bold}];
+      if(node.nodeType!==Node.ELEMENT_NODE || (node.dataset.lang && node.dataset.lang!==language()))return [];
+      if(node.tagName==='BR')return [{text:'\n',link,bold}];
+      return [...node.childNodes].flatMap(child=>runsOf(child,node.tagName==='A'?node:link,bold||node.tagName==='STRONG'));
+    }
+    function layoutText(element,box,record=true) {
+      const type=element.dataset.particle, spec=specs[type];
+      const weight=zh&&!['paper','authors'].includes(type)?'500':'400';
+      const fontFor=run=>`${type==='motto'&&!zh?'italic ':''}${run.bold?'600':weight} ${spec.size}px ${['paper','authors'].includes(type)?latin:family}`;
+      const tokens=[];
+      for(const run of runsOf(element,element.tagName==='A'?element:null)) {
+        for(const text of run.text.match(/\n|[^\S\n]+|[\u3400-\u9fff]|[^\s\u3400-\u9fff]+/gu)||[])tokens.push({...run,text:text==='\n'?'\n':/^\s+$/.test(text)?' ':text});
+      }
+      const lines=[];let line=[],lineWidth=0;
+      function flush(){while(line.length&&line.at(-1).text===' '){lineWidth-=line.pop().width;}lines.push({runs:line,width:lineWidth});line=[];lineWidth=0;}
+      function add(run){
+        if(run.text==='\n'){flush();return;}
+        if(!line.length&&run.text===' ')return;
+        ctx.font=fontFor(run);
+        const measured=ctx.measureText(run.text).width;
+        if(measured>box.width){for(const ch of Array.from(run.text))add({...run,text:ch});return;}
+        if(lineWidth+measured>box.width&&line.length){flush();if(run.text===' ')return;}
+        line.push({...run,width:measured});lineWidth+=measured;
+      }
+      tokens.forEach(add);if(line.length)flush();
+      const lineHeight=spec.size*spec.line;
+      if(record)lines.forEach((line,index)=>{
+        let x=box.x+(box.centered?(box.width-line.width)/2:0);
+        const y=box.y+index*lineHeight;
+        for(const run of line.runs){
+          items.push({type:'text',text:run.text,x,y,font:fontFor(run),color:colors[run.link?'accent':spec.color]});
+          if(run.link&&run.text.trim()){
+            if(!links.has(run.link))links.set(run.link,[]);
+            const boxes=links.get(run.link),last=boxes.at(-1);
+            if(last&&last.y===y&&x-last.x-last.width<spec.size*.5)last.width=x+run.width-last.x;
+            else boxes.push({x,y,width:run.width,height:lineHeight});
           }
+          x+=run.width;
         }
-        if (line || !lines.length) lines.push(line.trimEnd());
-      }
-      return lines;
+      });
+      return lines.length*lineHeight+spec.after;
     }
-    const items = [];
-    let cursor = 0;
-    for (const element of panels[chapter].querySelectorAll('[data-particle]')) {
-      const type = element.dataset.particle;
-      if (type === 'portrait') {
-        const imageHeight = narrow ? 154 : Math.min(190, Math.max(144, minimumHeight * .25));
-        items.push({type,x:(width-imageHeight*.75)/2,y:cursor,width:imageHeight*.75,height:imageHeight});
-        cursor += imageHeight + 22; continue;
+    function imageItem(element,x,y,w,h){items.push({type:'image',source:imagePixels.get(element.getAttribute('src')),x,y,width:w,height:h});}
+    function block(element,y,box={x:left,width:contentWidth}) {
+      if(element.dataset.particle==='rule'){items.push({type:'rule',x:box.x,y:y+3,width:box.width});return narrow?29:32;}
+      if(element.dataset.particle==='portrait'){
+        const h=narrow?146:142;
+        const ratio=Number(element.getAttribute('width'))/Number(element.getAttribute('height'))||.75;
+        imageItem(element,(width-h*ratio)/2,y,h*ratio,h);return h+18;
       }
-      if (type === 'rule') { items.push({type,x:left,y:cursor+3,width:contentWidth}); cursor += narrow ? 26 : 27; continue; }
-      const spec = specs[type];
-      const text = selectedText(element).trim();
-      const weight = zh && !['paper','authors'].includes(type) ? '500' : '400';
-      const font = `${type === 'motto' && !zh ? 'italic ' : ''}${weight} ${spec.size}px ${['paper','authors'].includes(type) ? latin : family}`;
-      ctx.font = font;
-      const lines = wrapped(text, contentWidth);
-      const lineHeight = spec.size * spec.line;
-      const boxes = [];
-      for (const line of lines) {
-        const lineWidth = ctx.measureText(line).width;
-        const x = centered ? (width-lineWidth)/2 : left;
-        items.push({type:'text',text:line,x,y:cursor,font,size:spec.size,color:colors[spec.color]});
-        boxes.push({x,y:cursor,width:lineWidth,height:lineHeight});
-        cursor += lineHeight;
-      }
-      if (element.tagName === 'A') items.push({type:'link',element,boxes,text});
-      cursor += spec.after;
+      const centered=['name','subtitle','motto'].includes(element.dataset.particle);
+      return layoutText(element,{...box,y,centered});
     }
-    const paddingTop = narrow ? 25 : 28;
-    const contentHeight = cursor;
-    const height = Math.ceil(Math.max(minimumHeight, contentHeight + paddingTop * 2));
-    const offset = Math.max(paddingTop, (height-contentHeight)/2);
-    stage.style.height = `${height}px`;
-    // A classic scrollbar can change the column width after its height grows.
-    if (Math.round(stage.getBoundingClientRect().width) !== width) return composePage();
-    const sampling = Math.max(1, Math.min(devicePixelRatio || 1, 2));
-    scratch.width = Math.ceil(width*sampling); scratch.height = Math.ceil(height*sampling);
-    ctx.scale(sampling,sampling); ctx.textBaseline = 'top';
-    const links = [];
-    let portraitBox = null;
-    for (const item of items) {
-      if (item.type === 'text') { ctx.font=item.font; ctx.fillStyle=item.color; ctx.fillText(item.text,item.x,item.y+offset); }
-      else if (item.type === 'portrait') portraitBox={...item,y:item.y+offset};
-      else if (item.type === 'rule') {ctx.fillStyle=colors.rule;ctx.fillRect(item.x,item.y+offset,item.width,.7);}
-      else if (item.type === 'link') {
-        const x = Math.min(...item.boxes.map(box => box.x));
-        const right = Math.max(...item.boxes.map(box => box.x + box.width));
-        const y = item.boxes[0].y;
-        const last = item.boxes[item.boxes.length - 1];
-        links.push({x,y:y+offset,width:right-x,height:last.y+last.height-y,text:item.text,element:item.element});
-        for (const box of item.boxes) {
-          if (item.element.dataset.particle === 'link') {ctx.fillStyle=colors.rule;ctx.fillRect(box.x,box.y+offset+box.height-2,box.width,.7);}
+    let cursor=0;
+    if(chapter===1){
+      cursor+=block(panels[chapter].querySelector('[data-particle="title"]'),cursor);
+      const schools=[...panels[chapter].querySelectorAll('.school-entry')];
+      if(width>=940){
+        const gap=48, columnWidth=(contentWidth-gap)/2, emblemSize=76, inset=96;
+        const cells=schools.map((school,i)=>{
+          const x=left+i*(columnWidth+gap);
+          imageItem(school.querySelector('img'),x,cursor+4,emblemSize,emblemSize);
+          return {x:x+inset,width:columnWidth-inset,fields:[...school.querySelectorAll('[data-particle]:not(img)')]};
+        });
+        for(let row=0;row<cells[0].fields.length;row++){
+          const rowHeight=Math.max(...cells.map(cell=>layoutText(cell.fields[row],{x:cell.x,width:cell.width,y:cursor},false)));
+          for(const cell of cells)layoutText(cell.fields[row],{x:cell.x,width:cell.width,y:cursor});
+          cursor+=rowHeight;
         }
+      }else{
+        schools.forEach((school,i)=>{
+          const heading=school.querySelector('[data-particle="heading"]');
+          const emblemSize=61;
+          imageItem(school.querySelector('img'),left,cursor+3,emblemSize,emblemSize);
+          cursor+=Math.max(emblemSize+15,layoutText(heading,{x:left+81,width:contentWidth-81,y:cursor}));
+          for(const field of school.querySelectorAll('[data-particle]:not(img):not([data-particle="heading"])'))cursor+=block(field,cursor);
+          if(i<schools.length-1){cursor+=13;items.push({type:'rule',x:left,y:cursor,width:contentWidth});cursor+=27;}
+        });
       }
+    }else{
+      for(const element of panels[chapter].querySelectorAll('[data-particle]'))cursor+=block(element,cursor);
     }
-    const pixels = ctx.getImageData(0,0,scratch.width,scratch.height).data;
-    const points = [];
-    for (let y=0;y<scratch.height;y++) for (let x=0;x<scratch.width;x++) {
-      const i=(y*scratch.width+x)*4, alpha=pixels[i+3]/255;
-      if (alpha === 0) continue;
-      points.push(stageRect.left+(x+.5)/sampling-viewportWidth/2, innerHeight/2-documentTop-(y+.5)/sampling, 0, pixels[i]/255,pixels[i+1]/255,pixels[i+2]/255,alpha,1/sampling);
+    const padding=narrow?25:28;
+    const height=Math.ceil(Math.max(minimumHeight,cursor+padding*2));
+    const offset=Math.max(padding,(height-cursor)/2);
+    stage.style.height=`${height}px`;
+    if(Math.round(stage.getBoundingClientRect().width)!==width)return composePage();
+    const sampling=Math.max(1,Math.min(devicePixelRatio||1,2));
+    scratch.width=Math.ceil(width*sampling);scratch.height=Math.ceil(height*sampling);
+    ctx.scale(sampling,sampling);ctx.textBaseline='top';
+    for(const item of items){
+      if(item.type==='text'){ctx.font=item.font;ctx.fillStyle=item.color;ctx.fillText(item.text,item.x,item.y+offset);}
+      else if(item.type==='image'&&item.source)ctx.drawImage(item.source,item.x,item.y+offset,item.width,item.height);
+      else if(item.type==='rule'){ctx.fillStyle=colors.rule;ctx.fillRect(item.x,item.y+offset,item.width,.7);}
     }
-    if (portraitBox && portraitPixels) {
-      const {rgba,w,h}=portraitPixels;
-      for(let y=0;y<h;y++) for(let x=0;x<w;x++) {
-        const i=(y*w+x)*4;
-        const alpha=rgba[i+3]/255;
-        const darkness=(1-(rgba[i]*.2126+rgba[i+1]*.7152+rgba[i+2]*.0722)/255)*alpha;
-        if(darkness<.10 || (x*13+y*7)%19/19 > Math.pow(darkness,.6))continue;
-        points.push(stageRect.left+portraitBox.x+x/w*portraitBox.width-viewportWidth/2,innerHeight/2-documentTop-(portraitBox.y+y/h*portraitBox.height),0,rgba[i]/255,rgba[i+1]/255,rgba[i+2]/255,Math.min(1,.25+darkness)*alpha,1.2);
-      }
+    const pixels=ctx.getImageData(0,0,scratch.width,scratch.height).data,points=[];
+    for(let y=0;y<scratch.height;y++)for(let x=0;x<scratch.width;x++){
+      const i=(y*scratch.width+x)*4,alpha=pixels[i+3]/255;
+      if(!alpha)continue;
+      points.push(stageRect.left+(x+.5)/sampling-viewportWidth/2,innerHeight/2-documentTop-(y+.5)/sampling,0,pixels[i]/255,pixels[i+1]/255,pixels[i+2]/255,alpha,1/sampling);
     }
     linkLayer.replaceChildren();
-    for (const link of links) {
-      const a=document.createElement('a'); a.className='particle-link';
-      a.href=link.element.href;
-      if(link.element.target){a.target=link.element.target;a.rel='noopener noreferrer';}
-      a.style.cssText=`left:${link.x}px;top:${link.y}px;width:${Math.max(8,link.width)}px;height:${link.height}px`;
-      a.setAttribute('aria-label',link.text);
-      const label=document.createElement('span');label.textContent=link.text;a.append(label);
+    for(const [element,boxes] of links){
+      const minX=Math.min(...boxes.map(b=>b.x)),minY=Math.min(...boxes.map(b=>b.y));
+      const maxX=Math.max(...boxes.map(b=>b.x+b.width)),maxY=Math.max(...boxes.map(b=>b.y+b.height));
+      const a=document.createElement('a');a.className='particle-link';a.href=element.href;
+      if(element.target){a.target=element.target;a.rel='noopener noreferrer';}
+      a.style.cssText=`left:${minX}px;top:${minY+offset}px;width:${maxX-minX}px;height:${maxY-minY}px`;
+      const text=selectedText(element).trim();a.setAttribute('aria-label',text);
+      const label=document.createElement('span');label.className='sr-only';label.textContent=text;a.append(label);
+      for(const box of boxes){const hit=document.createElement('span');hit.className='particle-link-hit';hit.setAttribute('aria-hidden','true');hit.style.cssText=`left:${box.x-minX}px;top:${box.y-minY}px;width:${box.width}px;height:${box.height}px`;a.append(hit);}
       linkLayer.append(a);
     }
     return {width:viewportWidth,height:innerHeight,points:new Float32Array(points)};
@@ -273,8 +281,8 @@
       void main(){
         float seed=aTraits.z;
         float delay=seed*.075;
-        float leave=smoothstep(.02+delay,.31+delay,uProgress);
-        float arrive=smoothstep(.66+delay*.4,1.0,uProgress);
+        float leave=smoothstep(.02+delay,.38+delay,uProgress);
+        float arrive=smoothstep(.53+delay*.4,1.0,uProgress);
         float breath=leave*(1.0-arrive);
         float phase=aTraits.w*6.2831853;
         vec3 symbol=aSymbol;
@@ -334,7 +342,7 @@
     let width=1,height=1,ratio=1,count=0,data=new Float32Array(0),target=new Float32Array(0);
     let start=0,progress=1,frameId=0,scrollFrame=0,lost=false;
     let pointer=[0,0],resizeTimer=0,inkFraction=.12;
-    const duration=4200;
+    const duration=2200;
     const smooth=(a,b,t)=>{const n=Math.min(1,Math.max(0,(t-a)/(b-a)));return n*n*(3-2*n);};
     const noise=n=>{const value=Math.sin(n*127.1+311.7)*43758.5453;return value-Math.floor(value);};
     const lerp=(a,b,t)=>a+(b-a)*t;
@@ -347,7 +355,7 @@
       const scale=Math.min(width*.72,height*.65,510);
       const jitter=(noise(i*7+3)-.5)*2.5;
       let x,y,z;
-      if(chapter===0 || chapter===3){
+      if(chapter===0 || chapter===2){
         const along=Math.floor(t*38)/38;
         const rib=noise(i*7+4);
         const spread=Math.pow(Math.sin(Math.PI*along),.7)*scale*.24;
@@ -356,14 +364,14 @@
         x=(along-.5)*scale*.66+reach*.86;
         y=(along-.5)*scale*1.05-reach*.5+Math.sin(rib*Math.PI)*spread*.17;
         z=reach*.19+Math.sin(along*Math.PI)*18;
-      }else if(chapter===1 || chapter===4){
+      }else if(chapter===1 || chapter===3){
         const strand=Math.floor(v*5)-2;
         const breadth=Math.min(width*.86,1000);
         const bend=chapter===1 ? 1.1 : 1.8;
         x=(t-.5)*breadth;
         y=Math.sin((t-.5)*Math.PI*bend)*scale*.24+strand*8*Math.sin(t*Math.PI)+(t-.5)*scale*.26;
         z=Math.cos(t*Math.PI*2+strand*.6)*55;
-      }else if(chapter===2){
+      }else if(chapter===4){
         const branch=Math.floor(v*9);
         const side=branch%2?1:-1;
         const root=branch/9;
@@ -387,7 +395,7 @@
       const out=new Float32Array(count*8);
       for(let i=0;i<count;i++){
         const k=i*stride,j=i*8,seed=data[k+22],phase=data[k+23]*Math.PI*2;
-        const leave=smooth(.02+seed*.075,.31+seed*.075,progress),arrive=smooth(.66+seed*.03,1,progress),breath=leave*(1-arrive);
+        const leave=smooth(.02+seed*.075,.38+seed*.075,progress),arrive=smooth(.53+seed*.03,1,progress),breath=leave*(1-arrive);
         const symbol=[data[k+6]+Math.sin(phase+progress*5)*8,data[k+7]+Math.sin(phase*.7+progress*4.3)*7-scrollY,data[k+8]+Math.sin(phase+progress*3)*15];
         const guide=[data[k+9],data[k+10]-scrollY,data[k+11]];
         const gather=[-data[k+9]*.7,data[k+10]*.65-scrollY,data[k+11]*.7];
@@ -450,7 +458,7 @@
       gl.uniform1f(uniforms.uCamera,Math.max(width,height)*1.5);
       gl.uniform1f(uniforms.uPixelRatio,ratio);gl.uniform1f(uniforms.uProgress,progress);gl.uniform1f(uniforms.uScroll,scrollY);gl.uniform1f(uniforms.uInkFraction,inkFraction);
       gl.drawArrays(gl.POINTS,0,count);
-      stage.dataset.phase=progress<1?(progress>.36&&progress<.66?'interlude':'assembling'):'formed';
+      stage.dataset.phase=progress<1?(progress>.455&&progress<.56?'interlude':'assembling'):'formed';
     }
     function schedule(){if(!frameId&&!paused&&!document.hidden&&!lost&&progress<1)frameId=requestAnimationFrame(frame);}
     function frame(now){frameId=0;progress=Math.min(1,(now-start)/duration);draw();if(progress>=1)stage.classList.remove('is-assembling');else schedule();}
@@ -484,17 +492,35 @@
     rebuild(true);
     return {rebuild,replay,setPaused,capture};
   }
-  const portrait=new Image();
-  portrait.onload=()=>{
-    try{
-      const sample=document.createElement('canvas');sample.width=180;sample.height=240;
-      const c=sample.getContext('2d',{willReadFrequently:true});c.drawImage(portrait,0,0,180,240);
-      portraitPixels={rgba:c.getImageData(0,0,180,240).data,w:180,h:240};
-      if(chapter===0)renderer?.rebuild(stage.dataset.phase !== 'formed');
-    }catch(error){ /* The text experience remains usable without the portrait. */ }
-  };
-  portrait.src='assets/portrait-ink-transparent.png';
-  const ready=document.fonts?.ready||Promise.resolve();
+  function prepareImage(element) {
+    const source=element.getAttribute('src');
+    return new Promise(resolve=>{
+      const image=new Image();
+      image.onload=()=>{
+        try{
+          const sample=document.createElement('canvas');
+          const scale=Math.min(1,520/image.naturalHeight);
+          sample.width=Math.round(image.naturalWidth*scale);sample.height=Math.round(image.naturalHeight*scale);
+          const context=sample.getContext('2d',{willReadFrequently:true});context.drawImage(image,0,0,sample.width,sample.height);
+          if(element.dataset.particle==='emblem'){
+            // The seal's white paper is negative space, not a rectangular tile.
+            const pixels=context.getImageData(0,0,sample.width,sample.height),rgba=pixels.data;
+            for(let i=0;i<rgba.length;i+=4){
+              const opacity=1-Math.min(rgba[i],rgba[i+1],rgba[i+2])/255;
+              if(opacity<.035){rgba[i+3]=0;continue;}
+              for(let c=0;c<3;c++)rgba[i+c]=Math.max(0,Math.min(255,(rgba[i+c]-255*(1-opacity))/opacity));
+              rgba[i+3]=Math.round(rgba[i+3]*opacity);
+            }
+            context.putImageData(pixels,0,0);
+          }
+          imagePixels.set(source,sample);
+        }catch(error){ /* Text remains available if a source image cannot load. */ }
+        resolve();
+      };
+      image.onerror=()=>resolve();image.src=source;
+    });
+  }
+  const ready=Promise.all([document.fonts?.ready||Promise.resolve(),...[...document.querySelectorAll('[data-particle="portrait"], [data-particle="emblem"]')].map(prepareImage)]);
   ready.then(()=>{
     try{renderer=createRenderer();if(!renderer)document.body.classList.add('particle-unavailable');}
     catch(error){document.body.classList.add('particle-unavailable');document.body.classList.remove('has-particles');stage.classList.remove('particle-ready');stage.style.height='';}
