@@ -17,9 +17,9 @@
   const hashIndex = hash => hash === 'questions' ? 0 : hashes.indexOf(hash);
   const names = [['About','简介'], ['Education','教育经历'], ['Publications','学术论文'], ['Project','代表项目'], ['Honors','主要荣誉'], ['Activities','社团活动']];
   const colors = {ink:'#171d29',body:'#242a34',muted:'#4b5565',accent:'#24559a',rule:'#c0b9ac'};
-  // 200 ms to release the letters, 600 ms for the image, 200 ms to reform.
+  // 600 ms to release the letters, 600 ms for the image, 600 ms to reform.
   // Share these phases with the shader and snapshot to keep interrupted turns seamless.
-  const motion = {duration:1000,stagger:.025,leaveEnd:.175,arriveStart:.8,arriveStagger:.01};
+  const motion = {duration:1800,stagger:.025,leaveEnd:1/3-.025,arriveStart:2/3,arriveStagger:.01};
   let chapter = Math.max(0, hashIndex(location.hash.slice(1)));
   let paused = reducedMotion.matches;
   let renderer = null;
@@ -283,9 +283,9 @@
       vec3 curve(vec3 a,vec3 b,vec3 c,float t){return a*(1.0-t)*(1.0-t)+2.0*b*t*(1.0-t)+c*t*t;}
       void main(){
         float seed=aTraits.z;
-        float delay=seed*${motion.stagger.toFixed(3)};
-        float leave=smoothstep(delay,${motion.leaveEnd.toFixed(3)}+delay,uProgress);
-        float arrive=smoothstep(${motion.arriveStart.toFixed(3)}+seed*${motion.arriveStagger.toFixed(3)},1.0,uProgress);
+        float delay=seed*${motion.stagger.toFixed(6)};
+        float leave=smoothstep(delay,${motion.leaveEnd.toFixed(6)}+delay,uProgress);
+        float arrive=smoothstep(${motion.arriveStart.toFixed(6)}+seed*${motion.arriveStagger.toFixed(6)},1.0,uProgress);
         float breath=leave*(1.0-arrive);
         float phase=aTraits.w*6.2831853;
         vec3 symbol=aSymbol;
@@ -506,8 +506,8 @@
           const scale=Math.min(1,520/image.naturalHeight);
           sample.width=Math.round(image.naturalWidth*scale);sample.height=Math.round(image.naturalHeight*scale);
           const context=sample.getContext('2d',{willReadFrequently:true});context.drawImage(image,0,0,sample.width,sample.height);
-          if(element.dataset.particle==='emblem'){
-            // The seal's white paper is negative space, not a rectangular tile.
+          if(['emblem','portrait'].includes(element.dataset.particle)){
+            // Source artwork keeps its paper; only ink becomes moving particles.
             const pixels=context.getImageData(0,0,sample.width,sample.height),rgba=pixels.data;
             for(let i=0;i<rgba.length;i+=4){
               const opacity=1-Math.min(rgba[i],rgba[i+1],rgba[i+2])/255;
