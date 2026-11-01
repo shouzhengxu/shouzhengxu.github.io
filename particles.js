@@ -20,6 +20,18 @@
   // 600 ms to release the letters, 600 ms for the image, 600 ms to reform.
   // Share these phases with the shader and snapshot to keep interrupted turns seamless.
   const motion = {duration:1800,stagger:.025,leaveEnd:1/3-.025,arriveStart:2/3,arriveStagger:.01};
+  // Every destination has its own image and movement, in the same quiet ink.
+  // Sway: rotation, horizontal ripple, vertical ripple, depth. Pulse: size, speed.
+  const motifs = [
+    {id:'astrolabe',sway:[.10,.6,.6,12],pulse:[0,1.4]},
+    {id:'open-book',sway:[.008,.6,2.8,18],pulse:[0,1.8]},
+    {id:'quill',sway:[.035,1.4,.6,3],pulse:[0,1.2]},
+    {id:'knowledge-network',sway:[0,.4,.4,8],pulse:[.025,2.4]},
+    {id:'laurel',sway:[.018,1.8,.8,6],pulse:[0,1.5]},
+    {id:'woven-ribbons',sway:[0,3.5,5,25],pulse:[0,2.8]}
+  ];
+  const networkNodes=[[-.43,.12],[-.23,.32],[-.05,.08],[.22,.30],[.43,0],[.21,-.28],[-.25,-.23]];
+  const networkEdges=[[0,1],[0,6],[1,2],[2,3],[2,5],[2,6],[3,4],[4,5],[5,6]];
   let chapter = Math.max(0, hashIndex(location.hash.slice(1)));
   let paused = reducedMotion.matches;
   let renderer = null;
@@ -116,8 +128,9 @@
     const viewportWidth = document.documentElement.clientWidth;
     const narrow = width < 650;
     const zh = language() === 'zh';
-    const family = zh ? '"Songti SC", "STSong", serif' : 'Charter, "Bitstream Charter", Georgia, serif';
-    const latin = 'Charter, "Bitstream Charter", Georgia, serif';
+    const typography = getComputedStyle(document.documentElement);
+    const latin = typography.getPropertyValue('--latin').trim();
+    const family = zh ? typography.getPropertyValue('--chinese').trim() : latin;
     const scratch = document.createElement('canvas');
     const ctx = scratch.getContext('2d', {willReadFrequently:true});
     const stageRect = stage.getBoundingClientRect();
@@ -261,7 +274,7 @@
   function createRenderer() {
     const gl=canvas.getContext('webgl',{alpha:true,antialias:false,depth:false,powerPreference:'low-power'});
     if(!gl)return null;
-    // The settled page lives in document coordinates. The feather and streams
+    // The settled page lives in document coordinates. The symbolic interludes
     // live in viewport coordinates, so their motion is free of the text column.
     const vertex=`
       attribute vec3 aFrom;
@@ -278,6 +291,8 @@
       uniform float uProgress;
       uniform float uScroll;
       uniform float uInkFraction;
+      uniform vec4 uSway;
+      uniform vec2 uPulse;
       varying vec4 vColor;
       varying float vRound;
       vec3 curve(vec3 a,vec3 b,vec3 c,float t){return a*(1.0-t)*(1.0-t)+2.0*b*t*(1.0-t)+c*t*t;}
@@ -289,10 +304,13 @@
         float breath=leave*(1.0-arrive);
         float phase=aTraits.w*6.2831853;
         vec3 symbol=aSymbol;
-        // A slow travelling ripple runs along each coherent ink stroke.
-        symbol.x+=sin(phase+uProgress*5.0)*8.0;
-        symbol.y+=sin(phase*.7+uProgress*4.3)*7.0;
-        symbol.z+=sin(phase+uProgress*3.0)*15.0;
+        float time=(uProgress-.333333)*3.0;
+        float angle=sin(time*uPulse.y)*uSway.x;
+        float swell=1.0+sin(time*uPulse.y)*uPulse.x;
+        symbol.xy=vec2(symbol.x*cos(angle)-symbol.y*sin(angle),symbol.x*sin(angle)+symbol.y*cos(angle))*swell;
+        symbol.x+=sin(phase-time*uPulse.y)*uSway.y;
+        symbol.y+=sin(phase*.7-time*uPulse.y)*uSway.z;
+        symbol.z+=sin(phase-time*uPulse.y)*uSway.w;
         symbol.y-=uScroll;
         vec3 guide=aGuide;guide.y-=uScroll;
         vec3 gather=vec3(-aGuide.x*.7,aGuide.y*.65-uScroll,aGuide.z*.7);
@@ -341,24 +359,49 @@
     const stride=24;
     const attributes=[['aFrom',3,0],['aTo',3,3],['aSymbol',3,6],['aGuide',3,9],['aFromColor',4,12],['aToColor',4,16],['aTraits',4,20]];
     for(const [name,size,offset] of attributes){const a=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,size,gl.FLOAT,false,stride*4,offset*4);}
-    const uniforms={};for(const key of ['uViewport','uPointer','uCamera','uPixelRatio','uProgress','uScroll','uInkFraction'])uniforms[key]=gl.getUniformLocation(program,key);
+    const uniforms={};for(const key of ['uViewport','uPointer','uCamera','uPixelRatio','uProgress','uScroll','uInkFraction','uSway','uPulse'])uniforms[key]=gl.getUniformLocation(program,key);
     let width=1,height=1,ratio=1,count=0,data=new Float32Array(0),target=new Float32Array(0);
     let start=0,progress=1,frameId=0,scrollFrame=0,lost=false;
     let pointer=[0,0],resizeTimer=0,inkFraction=.12;
+    let activeMotif=motifs[chapter];
     const duration=motion.duration;
     const smooth=(a,b,t)=>{const n=Math.min(1,Math.max(0,(t-a)/(b-a)));return n*n*(3-2*n);};
     const noise=n=>{const value=Math.sin(n*127.1+311.7)*43758.5453;return value-Math.floor(value);};
     const lerp=(a,b,t)=>a+(b-a)*t;
     const curve=(a,b,c,t)=>a*(1-t)*(1-t)+2*b*t*(1-t)+c*t*t;
 
-    // These are strokes, rather than filled surfaces: a quill for writing,
-    // rising streams for learning and practice, branches and orbits for ideas.
+    // Each page owns a different silhouette: exploration, learning, writing,
+    // connected knowledge, achievement, and collaboration. Only strokes are used.
     function symbolicPoint(i){
       const t=noise(i*7+1),v=noise(i*7+2),side=v<.5?-1:1;
-      const scale=Math.min(width*.72,height*.65,510);
-      const jitter=(noise(i*7+3)-.5)*2.5;
+      const scale=Math.min(width*.64,height*.65,510);
+      const jitter=(noise(i*7+3)-.5)*1.6;
       let x,y,z;
-      if(chapter===0 || chapter===2){
+      if(chapter===0){
+        // A guiding star inside incomplete astrolabe rings: into the unexplored.
+        if(v<.24){
+          const ray=Math.floor(v/.24*8),angle=ray*Math.PI/4;
+          const radius=scale*(ray%2?.115:.22)*t;
+          x=Math.cos(angle)*radius;y=Math.sin(angle)*radius;z=0;
+        }else{
+          const ring=Math.floor((v-.24)/.76*3),angle=t*Math.PI*1.83+.15+ring*.7;
+          const a=scale*(.43+ring*.025),b=scale*(.21+ring*.035),tilt=ring===0?-.48:ring===1?.66:1.56;
+          const px=Math.cos(angle)*a,py=Math.sin(angle)*b;
+          x=px*Math.cos(tilt)-py*Math.sin(tilt);
+          y=px*Math.sin(tilt)+py*Math.cos(tilt);
+          z=Math.sin(angle)*26;
+        }
+      }else if(chapter===1){
+        // Paired, gently fanned folios and a spine form an open book.
+        const page=Math.floor(noise(i*7+4)*4),part=noise(i*7+5);
+        const breadth=scale*(.43+page*.012);
+        if(part<.44){x=side*t*breadth;y=scale*(.10+.14*Math.sin(t*Math.PI)+.10*t+page*.014);}
+        else if(part<.88){x=side*t*breadth;y=scale*(-.28+.08*Math.sin(t*Math.PI)+.10*t-page*.012);}
+        else if(part<.97){x=side*breadth;y=scale*lerp(-.18-page*.012,.20+page*.014,t);}
+        else{x=0;y=scale*lerp(-.28,.10,t);}
+        z=Math.sin(Math.abs(x)/breadth*Math.PI)*18+page*3;
+      }else if(chapter===2){
+        // The writing quill is reserved for publications.
         const along=Math.floor(t*38)/38;
         const rib=noise(i*7+4);
         const spread=Math.pow(Math.sin(Math.PI*along),.7)*scale*.24;
@@ -367,28 +410,65 @@
         x=(along-.5)*scale*.66+reach*.86;
         y=(along-.5)*scale*1.05-reach*.5+Math.sin(rib*Math.PI)*spread*.17;
         z=reach*.19+Math.sin(along*Math.PI)*18;
-      }else if(chapter===1 || chapter===3){
-        const strand=Math.floor(v*5)-2;
-        const breadth=Math.min(width*.86,1000);
-        const bend=chapter===1 ? 1.1 : 1.8;
-        x=(t-.5)*breadth;
-        y=Math.sin((t-.5)*Math.PI*bend)*scale*.24+strand*8*Math.sin(t*Math.PI)+(t-.5)*scale*.26;
-        z=Math.cos(t*Math.PI*2+strand*.6)*55;
+      }else if(chapter===3){
+        // Curved evidence paths connect distinct nodes, echoing RAG and agents.
+        if(v<.28){
+          const node=networkNodes[Math.floor(v/.28*networkNodes.length)],angle=t*Math.PI*2;
+          x=scale*(node[0]+Math.cos(angle)*.025);y=scale*(node[1]+Math.sin(angle)*.025);z=0;
+        }else{
+          const edge=networkEdges[Math.floor((v-.28)/.72*networkEdges.length)],a=networkNodes[edge[0]],b=networkNodes[edge[1]];
+          const dx=b[0]-a[0],dy=b[1]-a[1],distance=Math.hypot(dx,dy);
+          const bend=Math.sin(t*Math.PI)*.035;
+          // End at the edge of each node's ring instead of cutting through it.
+          const along=lerp(.025/distance,1-.025/distance,t);
+          x=scale*(lerp(a[0],b[0],along)-dy/distance*bend);
+          y=scale*(lerp(a[1],b[1],along)+dx/distance*bend);
+          z=Math.sin(t*Math.PI)*23;
+        }
       }else if(chapter===4){
-        const branch=Math.floor(v*9);
-        const side=branch%2?1:-1;
-        const root=branch/9;
-        const reach=t*Math.sin(root*Math.PI)*scale*.44;
-        x=side*reach+Math.sin(root*3)*scale*.08;
-        y=(root-.5)*scale*.82+t*scale*.25-Math.sin(t*Math.PI)*scale*.1;
-        z=Math.sin(t*Math.PI+branch)*34;
+        // Two laurel boughs, with outlined leaves and an open crown.
+        const stem=noise(i*7+4)<.20;
+        const along=stem?t:(Math.floor(noise(i*7+5)*8)+.5)/8;
+        const angle=-1.30+along*2.60;
+        x=side*(.08+.32*Math.cos(angle))*scale;y=Math.sin(angle)*scale*.42;
+        if(!stem){
+          const inner=noise(i*7+6)<.5,leaf=t*Math.PI*2;
+          const reach=(1-Math.cos(leaf))*.5;
+          const dx=side*(inner?-.065:.095)*scale,dy=scale*.11;
+          const length=Math.hypot(dx,dy),across=Math.sin(leaf)*scale*.019;
+          x+=reach*dx-across*dy/length;y+=reach*dy+across*dx/length;
+        }
+        z=Math.sin(along*Math.PI)*16;
       }else{
-        const strand=Math.floor(v*3),angle=t*Math.PI*2;
-        x=Math.sin(angle)*scale*.57;
-        y=Math.sin(angle*2)*scale*.21+(strand-1)*9;
-        z=Math.cos(angle+strand*.35)*60;
+        // Three ribbons meet, weave through one another, then share an endpoint.
+        const strand=Math.floor(v*3),angle=t*Math.PI*2+strand*Math.PI*2/3;
+        const envelope=Math.sin(t*Math.PI),edge=noise(i*7+4)<.5?-1:1;
+        x=(t-.5)*scale*1.42;
+        y=Math.sin(angle)*scale*.19*envelope+edge*3*envelope;
+        z=Math.cos(angle)*scale*.12*envelope;
       }
       return [x+jitter,y+jitter*.6,z];
+    }
+
+    function guidePoint(symbol,phase){
+      const angle=phase*Math.PI*2,scale=Math.min(width*.64,height*.65,510);
+      const [x,y,z]=symbol;
+      if(chapter===0)return [x*.7+Math.cos(angle)*scale*.52,y*.7+Math.sin(angle)*scale*.52,z+110];
+      if(chapter===1)return [x*1.45,y*.5+Math.sin(phase*Math.PI)*scale*.6,80+phase*65];
+      if(chapter===2)return [x*.5+(phase-.5)*scale,y*.5+(phase-.5)*scale*.9,z+95];
+      if(chapter===3)return [x*1.5,y*1.4,z+70+Math.sin(angle)*35];
+      if(chapter===4)return [x*1.35,y*.8+scale*.27,z+75];
+      return [x*1.3,y+Math.sin(angle)*scale*.25,z+Math.cos(angle)*80];
+    }
+
+    function movingSymbol(x,y,z,phase){
+      const {sway,pulse}=activeMotif,time=(progress-.333333)*3;
+      const angle=Math.sin(time*pulse[1])*sway[0],swell=1+Math.sin(time*pulse[1])*pulse[0];
+      return [
+        (x*Math.cos(angle)-y*Math.sin(angle))*swell+Math.sin(phase-time*pulse[1])*sway[1],
+        (x*Math.sin(angle)+y*Math.cos(angle))*swell+Math.sin(phase*.7-time*pulse[1])*sway[2]-scrollY,
+        z+Math.sin(phase-time*pulse[1])*sway[3]
+      ];
     }
 
     // Snapshot uses the shader's exact choreography, including alpha and depth.
@@ -400,7 +480,7 @@
         const k=i*stride,j=i*8,seed=data[k+22],phase=data[k+23]*Math.PI*2;
         const delay=seed*motion.stagger;
         const leave=smooth(delay,motion.leaveEnd+delay,progress),arrive=smooth(motion.arriveStart+seed*motion.arriveStagger,1,progress),breath=leave*(1-arrive);
-        const symbol=[data[k+6]+Math.sin(phase+progress*5)*8,data[k+7]+Math.sin(phase*.7+progress*4.3)*7-scrollY,data[k+8]+Math.sin(phase+progress*3)*15];
+        const symbol=movingSymbol(data[k+6],data[k+7],data[k+8],phase);
         const guide=[data[k+9],data[k+10]-scrollY,data[k+11]];
         const gather=[-data[k+9]*.7,data[k+10]*.65-scrollY,data[k+11]*.7];
         for(let axis=0;axis<3;axis++)out[j+axis]=curve(curve(data[k+axis],guide[axis],symbol[axis],leave),gather[axis],data[k+3+axis],arrive);
@@ -422,6 +502,7 @@
       if(lost)return;
       cancelAnimationFrame(frameId);frameId=0;
       const from=fromOverride||snapshot();
+      activeMotif=motifs[chapter];
       width=page.width;height=page.height;target=page.points;
       ratio=Math.max(1,Math.min(devicePixelRatio||1,2));
       canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio);gl.viewport(0,0,canvas.width,canvas.height);
@@ -432,7 +513,7 @@
       for(let i=0;i<count;i++){
         const k=i*stride,fi=(i%Math.max(1,fromCount))*8,ti=(i%Math.max(1,toCount))*8;
         const symbol=symbolicPoint(i),phase=noise(i*7+1);
-        const guide=[symbol[0]*.35+Math.cos(phase*Math.PI*2)*width*.45,symbol[1]*.4+Math.sin(phase*Math.PI*2)*height*.38,80+phase*130];
+        const guide=guidePoint(symbol,phase);
         for(let axis=0;axis<3;axis++){
           data[k+axis]=i<fromCount?from[fi+axis]:symbol[axis]-(axis===1?scrollY:0);
           data[k+3+axis]=i<toCount?target[ti+axis]:symbol[axis]-(axis===1?scrollY:0);
@@ -451,6 +532,7 @@
       stage.classList.add('particle-ready');
       panels.forEach(panel=>panel.querySelectorAll('a').forEach(a=>{a.tabIndex=-1;}));
       stage.dataset.particleCount=String(toCount);
+      stage.dataset.motif=activeMotif.id;
       start=performance.now();progress=animate&&!paused?0:1;
       stage.classList.toggle('is-assembling',progress<1);
       draw();schedule();
@@ -461,6 +543,7 @@
       gl.uniform2f(uniforms.uViewport,width,height);gl.uniform2f(uniforms.uPointer,pointer[0],pointer[1]);
       gl.uniform1f(uniforms.uCamera,Math.max(width,height)*1.5);
       gl.uniform1f(uniforms.uPixelRatio,ratio);gl.uniform1f(uniforms.uProgress,progress);gl.uniform1f(uniforms.uScroll,scrollY);gl.uniform1f(uniforms.uInkFraction,inkFraction);
+      gl.uniform4fv(uniforms.uSway,activeMotif.sway);gl.uniform2fv(uniforms.uPulse,activeMotif.pulse);
       gl.drawArrays(gl.POINTS,0,count);
       stage.dataset.phase=progress<1?(progress>=motion.leaveEnd+motion.stagger&&progress<motion.arriveStart?'interlude':'assembling'):'formed';
     }
@@ -524,7 +607,11 @@
       image.onerror=()=>resolve();image.src=source;
     });
   }
-  const ready=Promise.all([document.fonts?.ready||Promise.resolve(),...[...document.querySelectorAll('[data-particle="portrait"], [data-particle="emblem"]')].map(prepareImage)]);
+  // Load the Chinese face even on an English chapter before sampling any text.
+  // Otherwise the first language switch could permanently sample a fallback.
+  const chineseFamily=getComputedStyle(document.documentElement).getPropertyValue('--chinese').trim();
+  const chineseReady=document.fonts?document.fonts.load(`500 21px ${chineseFamily}`,'探未至之境').catch(()=>[]):Promise.resolve();
+  const ready=Promise.all([chineseReady,document.fonts?.ready||Promise.resolve(),...[...document.querySelectorAll('[data-particle="portrait"], [data-particle="emblem"]')].map(prepareImage)]);
   ready.then(()=>{
     try{renderer=createRenderer();if(!renderer)document.body.classList.add('particle-unavailable');}
     catch(error){document.body.classList.add('particle-unavailable');document.body.classList.remove('has-particles');stage.classList.remove('particle-ready');stage.style.height='';}

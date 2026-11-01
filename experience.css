@@ -6,11 +6,13 @@
   --muted: #4b5565;
   --accent: #24559a;
   --line: #d8dce3;
-  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, "Songti SC", SimSun, serif;
+  --serif: var(--latin);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: var(--paper); }
 body { color: var(--body); font: 20px/1.6 var(--serif); -webkit-font-smoothing: antialiased; }
+html[lang="zh-CN"] { --serif: var(--chinese); }
+html[lang="zh-CN"] body { font-weight: 500; }
 html[lang="en"] [data-lang="zh"], html[lang="zh-CN"] [data-lang="en"], [hidden] { display: none !important; }
 a { color: var(--accent); text-decoration: none; text-underline-offset: 5px; }
 a:hover { text-decoration: underline; }

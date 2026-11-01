@@ -5,8 +5,6 @@
   --muted: #4b5565;
   --blue: #24559a;
   --line: #d8dce3;
-  --latin: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, "Songti SC", SimSun, serif;
-  --chinese: "Songti SC", STSong, "Noto Serif CJK SC", SimSun, serif;
   --font: var(--latin);
 }
 * { box-sizing: border-box; }

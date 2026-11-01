@@ -1,0 +1,12 @@
+/* Use the visitor's installed face; the Office font is not redistributed. */
+@font-face {
+  font-family: "Huawen Zhongsong";
+  src: local("STZhongsong"), local("华文中宋");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+:root {
+  --chinese: "Huawen Zhongsong", "STZhongsong", "华文中宋", "Songti SC", STSong, "Noto Serif CJK SC", SimSun, serif;
+  --latin: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, var(--chinese);
+}
