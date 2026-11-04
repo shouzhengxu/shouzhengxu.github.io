@@ -15,7 +15,7 @@
   const mobile = matchMedia('(max-width: 700px)');
   const hashes = ['portrait', 'path', 'papers', 'practice', 'honors', 'together'];
   const hashIndex = hash => hash === 'questions' ? 0 : hashes.indexOf(hash);
-  const names = [['About','简介'], ['Education','教育经历'], ['Publications','学术论文'], ['Project','代表项目'], ['Honors','主要荣誉'], ['Activities','社团活动']];
+  const names = ['About', 'Education', 'Publications', 'Project', 'Honors', 'Activities'];
   const colors = {ink:'#171d29',body:'#242a34',muted:'#4b5565',accent:'#24559a',rule:'#c0b9ac'};
   // 600 ms to release the letters, 600 ms for the image, 600 ms to reform.
   // Share these phases with the shader and snapshot to keep interrupted turns seamless.
@@ -37,25 +37,14 @@
   let renderer = null;
   const imagePixels = new Map();
   let navigationTime = -Infinity;
-  const language = () => document.documentElement.lang.startsWith('zh') ? 'zh' : 'en';
-
-  function selectedText(node) {
-    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
-    if (node.nodeType !== Node.ELEMENT_NODE) return '';
-    if (node.dataset.lang && node.dataset.lang !== language()) return '';
-    if (node.tagName === 'BR') return '\n';
-    return [...node.childNodes].map(selectedText).join('');
-  }
   function updateControls() {
-    const zh = language() === 'zh';
-    document.title = zh ? '光字成篇 · 徐守正' : 'Written in Light · Shouzheng Xu';
-    document.getElementById('chapter-announcement').textContent = `${chapter + 1} / 6 — ${names[chapter][zh ? 1 : 0]}`;
-    motionButton.textContent = zh ? (paused ? '继续' : '暂停') : (paused ? 'Resume' : 'Pause');
-    motionButton.setAttribute('aria-label', zh ? (paused ? '继续粒子动态' : '暂停粒子动态') : (paused ? 'Resume particle motion' : 'Pause particle motion'));
+    document.getElementById('chapter-announcement').textContent = `${chapter + 1} / ${panels.length} — ${names[chapter]}`;
+    motionButton.textContent = paused ? 'Resume' : 'Pause';
+    motionButton.setAttribute('aria-label', paused ? 'Resume particle motion' : 'Pause particle motion');
     motionButton.setAttribute('aria-pressed', String(paused));
-    replayButton.textContent = zh ? '重读' : 'Replay';
+    replayButton.textContent = 'Replay';
     replayButton.disabled = paused;
-    document.getElementById('navigation-instruction').textContent = mobile.matches ? (zh ? '左右轻扫，翻页' : 'Swipe to turn the page') : (zh ? '滚动，翻开下一页' : 'Scroll to turn the page');
+    document.getElementById('navigation-instruction').textContent = mobile.matches ? 'Swipe to turn the page' : 'Scroll to turn the page';
     previous.disabled = chapter === 0;
     next.disabled = chapter === panels.length - 1;
   }
@@ -80,7 +69,6 @@
   replayButton.addEventListener('click', () => renderer?.replay());
   motionButton.addEventListener('click', () => { paused = !paused; renderer?.setPaused(paused); updateControls(); });
   reducedMotion.addEventListener('change', event => { paused = event.matches; renderer?.setPaused(paused); updateControls(); });
-  document.addEventListener('languagechange', () => { updateControls(); renderer?.rebuild(true); });
   window.addEventListener('hashchange', () => {
     const i = hashIndex(location.hash.slice(1));
     if (i >= 0) goTo(i, {fromHistory:true});
@@ -127,10 +115,9 @@
     const width = Math.round(stage.getBoundingClientRect().width);
     const viewportWidth = document.documentElement.clientWidth;
     const narrow = width < 650;
-    const zh = language() === 'zh';
     const typography = getComputedStyle(document.documentElement);
     const latin = typography.getPropertyValue('--latin').trim();
-    const family = zh ? typography.getPropertyValue('--chinese').trim() : latin;
+    const chineseFamily = typography.getPropertyValue('--chinese').trim();
     const scratch = document.createElement('canvas');
     const ctx = scratch.getContext('2d', {willReadFrequently:true});
     const stageRect = stage.getBoundingClientRect();
@@ -141,10 +128,11 @@
     const specs = {
       name:{size:narrow ? (width < 310 ? 39 : 44) : 61,line:1.2,after:9,color:'ink'},
       subtitle:{size:narrow ? 21 : 23,line:1.4,after:12,color:'muted'},
-      motto:{size:narrow ? 22 : 24,line:1.5,after:27,color:'muted'},
+      motto:{size:narrow ? 22 : 24,line:1.5,after:8,color:'muted'},
+      'motto-translation':{size:narrow ? 20 : 22,line:1.5,after:27,color:'muted'},
       title:{size:narrow ? 39 : 54,line:1.23,after:narrow ? 29 : 38,color:'ink'},
       heading:{size:narrow ? 25 : 28,line:1.42,after:12,color:'ink'},
-      body:{size:narrow ? 20 : 21,line:zh ? 1.8 : 1.55,after:22,color:'body'},
+      body:{size:narrow ? 20 : 21,line:1.55,after:22,color:'body'},
       faculty:{size:narrow ? 20 : 21,line:1.6,after:8,color:'body'},
       degree:{size:narrow ? 20 : 21,line:1.6,after:12,color:'body'},
       meta:{size:narrow ? 17 : 18,line:1.65,after:12,color:'muted'},
@@ -156,14 +144,15 @@
     const items = [], links = new Map();
     function runsOf(node, link=null, bold=false) {
       if(node.nodeType===Node.TEXT_NODE)return [{text:node.textContent,link,bold}];
-      if(node.nodeType!==Node.ELEMENT_NODE || (node.dataset.lang && node.dataset.lang!==language()))return [];
+      if(node.nodeType!==Node.ELEMENT_NODE)return [];
       if(node.tagName==='BR')return [{text:'\n',link,bold}];
       return [...node.childNodes].flatMap(child=>runsOf(child,node.tagName==='A'?node:link,bold||node.tagName==='STRONG'));
     }
     function layoutText(element,box,record=true) {
       const type=element.dataset.particle, spec=specs[type];
-      const weight=zh&&!['paper','authors'].includes(type)?'500':'400';
-      const fontFor=run=>`${type==='motto'&&!zh?'italic ':''}${run.bold?'600':weight} ${spec.size}px ${['paper','authors'].includes(type)?latin:family}`;
+      const chinese=element.lang==='zh-CN';
+      const weight=chinese?'500':'400';
+      const fontFor=run=>`${type==='motto-translation'?'italic ':''}${run.bold?'600':weight} ${spec.size}px ${chinese?chineseFamily:latin}`;
       const tokens=[];
       for(const run of runsOf(element,element.tagName==='A'?element:null)) {
         for(const text of run.text.match(/\n|[^\S\n]+|[\u3400-\u9fff]|[^\s\u3400-\u9fff]+/gu)||[])tokens.push({...run,text:text==='\n'?'\n':/^\s+$/.test(text)?' ':text});
@@ -205,7 +194,7 @@
         const ratio=Number(element.getAttribute('width'))/Number(element.getAttribute('height'))||.75;
         imageItem(element,(width-h*ratio)/2,y,h*ratio,h);return h+18;
       }
-      const centered=['name','subtitle','motto'].includes(element.dataset.particle);
+      const centered=['name','subtitle','motto','motto-translation'].includes(element.dataset.particle);
       return layoutText(element,{...box,y,centered});
     }
     let cursor=0;
@@ -263,7 +252,7 @@
       const a=document.createElement('a');a.className='particle-link';a.href=element.href;
       if(element.target){a.target=element.target;a.rel='noopener noreferrer';}
       a.style.cssText=`left:${minX}px;top:${minY+offset}px;width:${maxX-minX}px;height:${maxY-minY}px`;
-      const text=selectedText(element).trim();a.setAttribute('aria-label',text);
+      const text=element.textContent.trim();a.setAttribute('aria-label',text);
       const label=document.createElement('span');label.className='sr-only';label.textContent=text;a.append(label);
       for(const box of boxes){const hit=document.createElement('span');hit.className='particle-link-hit';hit.setAttribute('aria-hidden','true');hit.style.cssText=`left:${box.x-minX}px;top:${box.y-minY}px;width:${box.width}px;height:${box.height}px`;a.append(hit);}
       linkLayer.append(a);
@@ -554,7 +543,7 @@
       try{
         const source=from||snapshot(),oldScroll=scrollY;
         const page=composePage();
-        // A shorter translation may clamp native scroll while it is laid out.
+        // A shorter layout may clamp native scroll while it is laid out.
         if(!from)for(let j=0;j<source.length;j+=8)source[j+1]+=oldScroll-scrollY;
         install(page,animate,source);
       }catch(error){fallback();}
@@ -607,10 +596,9 @@
       image.onerror=()=>resolve();image.src=source;
     });
   }
-  // Load the Chinese face even on an English chapter before sampling any text.
-  // Otherwise the first language switch could permanently sample a fallback.
+  // Load the retained Chinese name and motto's face before sampling their glyphs.
   const chineseFamily=getComputedStyle(document.documentElement).getPropertyValue('--chinese').trim();
-  const chineseReady=document.fonts?document.fonts.load(`500 21px ${chineseFamily}`,'筑天阙于旷野').catch(()=>[]):Promise.resolve();
+  const chineseReady=document.fonts?document.fonts.load(`500 21px ${chineseFamily}`,'徐守正筑天阙于旷野').catch(()=>[]):Promise.resolve();
   const ready=Promise.all([chineseReady,document.fonts?.ready||Promise.resolve(),...[...document.querySelectorAll('[data-particle="portrait"], [data-particle="emblem"]')].map(prepareImage)]);
   ready.then(()=>{
     try{renderer=createRenderer();if(!renderer)document.body.classList.add('particle-unavailable');}
