@@ -610,7 +610,7 @@
   // Load the Chinese face even on an English chapter before sampling any text.
   // Otherwise the first language switch could permanently sample a fallback.
   const chineseFamily=getComputedStyle(document.documentElement).getPropertyValue('--chinese').trim();
-  const chineseReady=document.fonts?document.fonts.load(`500 21px ${chineseFamily}`,'为未有者赋形').catch(()=>[]):Promise.resolve();
+  const chineseReady=document.fonts?document.fonts.load(`500 21px ${chineseFamily}`,'筑天阙于旷野').catch(()=>[]):Promise.resolve();
   const ready=Promise.all([chineseReady,document.fonts?.ready||Promise.resolve(),...[...document.querySelectorAll('[data-particle="portrait"], [data-particle="emblem"]')].map(prepareImage)]);
   ready.then(()=>{
     try{renderer=createRenderer();if(!renderer)document.body.classList.add('particle-unavailable');}
